@@ -4,10 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Isabella - AI with Motion UI</title>
-
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
-
         :root {
             --primary-color: #00aaff;
             --background-color: #121212;
@@ -15,7 +13,6 @@
             --text-color: #e0e0e0;
             --accent-color: #3a3a3a;
         }
-
         body {
             font-family: 'Poppins', sans-serif;
             background: var(--background-color);
@@ -28,38 +25,27 @@
             text-align: center;
             overflow: hidden;
         }
-
-        /* Animated Background Canvas */
         #particles-canvas {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
             z-index: -1;
         }
-
         .container {
             background: var(--surface-color);
             padding: 40px 50px;
             border-radius: 30px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
-            width: 90%;
-            max-width: 700px;
+            width: 90%; max-width: 700px;
             border: 1px solid #333;
             z-index: 1;
             opacity: 0;
             transform: translateY(30px);
             animation: fadeInUp 0.8s 0.2s ease-out forwards;
         }
-
         @keyframes fadeInUp {
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            to { opacity: 1; transform: translateY(0); }
         }
-
         #clock {
             font-size: 2.5rem;
             font-weight: 600;
@@ -67,10 +53,8 @@
             margin-bottom: 15px;
             text-shadow: 0 0 10px rgba(0, 170, 255, 0.5);
         }
-
         h1 { color: #ffffff; margin-bottom: 5px; font-weight: 600; }
         p { color: #aaa; margin-bottom: 25px; }
-
         #chatbox {
             height: 280px;
             overflow-y: auto;
@@ -82,60 +66,43 @@
             scroll-behavior: smooth;
             text-align: left;
         }
-
         .message { margin-bottom: 12px; padding: 12px 18px; border-radius: 20px; max-width: 85%; line-height: 1.5; display: inline-block; }
         .user-message-container { text-align: right; animation: slideInFromRight 0.4s ease-out forwards; }
         .ai-message-container { text-align: left; animation: slideInFromLeft 0.4s ease-out forwards; }
-
         @keyframes slideInFromRight { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
         @keyframes slideInFromLeft { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
-
         .user-message { background: linear-gradient(45deg, #00aaff, #005f8b); color: #fff; border-bottom-right-radius: 5px; }
         .ai-message { background: var(--accent-color); color: #e0e0e0; border-bottom-left-radius: 5px; }
-
         #startButton { background: linear-gradient(45deg, var(--primary-color), #0077c2); color: white; padding: 15px 40px; border: none; border-radius: 50px; cursor: pointer; font-size: 18px; font-weight: 600; transition: all 0.3s ease; box-shadow: 0 5px 20px rgba(0, 170, 255, 0.3); }
         #startButton:hover { transform: translateY(-3px); box-shadow: 0 8px 30px rgba(0, 170, 255, 0.5); }
         #startButton.listening { animation: pulse 1.5s infinite; }
         #startButton:disabled { opacity: 0.6; cursor: not-allowed; }
-
-        /* .hidden helper */
         .hidden { display: none !important; }
-
-        /* AI Thinking Indicator (Waveform) */
         .ai-thinking-indicator { display: flex; justify-content: center; align-items: center; height: 55px; }
         .ai-thinking-indicator span { display: inline-block; width: 8px; height: 10px; margin: 0 3px; background-color: var(--primary-color); border-radius: 4px; animation: waveform 1.2s infinite ease-in-out; }
         .ai-thinking-indicator span:nth-child(2) { animation-delay: 0.2s; }
         .ai-thinking-indicator span:nth-child(3) { animation-delay: 0.4s; }
         .ai-thinking-indicator span:nth-child(4) { animation-delay: 0.6s; }
-
         @keyframes waveform { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(3.5); } }
-
         #status { margin-top: 20px; font-size: 16px; color: #888; height: 22px; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
     </style>
 </head>
 <body>
-
     <canvas id="particles-canvas" aria-hidden="true"></canvas>
-
     <div class="container" role="region" aria-label="Isabella AI assistant">
         <div id="clock" aria-live="polite"></div>
         <h1>Isabella AI</h1>
         <p>A Personal Assistant by Tejaswi Sen</p>
-
         <div id="chatbox" aria-live="polite" aria-atomic="false"></div>
-
-        <!-- AI Thinking Indicator -->
         <div class="ai-thinking-indicator hidden" id="thinking-indicator" aria-hidden="true">
             <span></span><span></span><span></span><span></span>
         </div>
-
         <button id="startButton" type="button" aria-pressed="false">Speak</button>
         <div id="status">Status: Ready</div>
     </div>
-
     <script>
-        // --- ANIMATED BACKGROUND SCRIPT ---
+        // Animated particles background
         const canvas = document.getElementById('particles-canvas');
         const ctx = canvas.getContext('2d');
         function resizeCanvas() {
@@ -144,7 +111,6 @@
         }
         resizeCanvas();
         let particlesArray = [];
-
         class Particle {
             constructor(x, y, directionX, directionY, size) {
                 this.x = x; this.y = y;
@@ -165,7 +131,6 @@
                 this.draw();
             }
         }
-
         function initParticles() {
             particlesArray = [];
             let numberOfParticles = Math.max(20, Math.floor((canvas.height * canvas.width) / 9000));
@@ -178,24 +143,21 @@
                 particlesArray.push(new Particle(x, y, directionX, directionY, size));
             }
         }
-
         function animateParticles() {
             requestAnimationFrame(animateParticles);
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             for (let p of particlesArray) p.update();
         }
-
         initParticles();
         animateParticles();
         window.addEventListener('resize', () => { resizeCanvas(); initParticles(); });
 
-        // --- AI ASSISTANT SCRIPT ---
+        // AI assistant logic
         const clockDiv = document.getElementById('clock');
         const startButton = document.getElementById('startButton');
         const statusDiv = document.getElementById('status');
         const chatbox = document.getElementById('chatbox');
         const thinkingIndicator = document.getElementById('thinking-indicator');
-
         function updateClock() {
             const now = new Date();
             clockDiv.textContent = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
@@ -220,7 +182,7 @@
         if (SpeechRecognition) {
             recognition = new SpeechRecognition();
             recognition.continuous = false;
-            recognition.lang = 'hi-IN';
+            recognition.lang = 'en-IN'; // Best for English + Hindi mix ("Hinglish")
             recognition.interimResults = false;
             recognition.maxAlternatives = 1;
 
@@ -230,7 +192,6 @@
                     recognition.start();
                     statusDiv.textContent = 'Listening...';
                 } catch (e) {
-                    // in some browsers calling start multiple times throws
                     console.warn('Recognition start error:', e);
                 }
             });
@@ -245,18 +206,15 @@
                 const speechResultRaw = (event.results[0][0].transcript || '').trim();
                 displayMessage(speechResultRaw, 'user');
 
-                // UI: hide some controls while "thinking"
                 statusDiv.classList.add('hidden');
                 startButton.classList.add('hidden');
                 thinkingIndicator.classList.remove('hidden');
 
-                // Simulate small processing delay for UX
                 setTimeout(() => {
                     const aiResponse = getAIResponse(speechResultRaw);
                     displayMessage(aiResponse.text, 'ai');
                     speak(aiResponse.text, aiResponse.emotion);
 
-                    // restore UI
                     thinkingIndicator.classList.add('hidden');
                     statusDiv.classList.remove('hidden');
                     startButton.classList.remove('hidden');
@@ -273,7 +231,6 @@
             };
 
             recognition.onend = () => {
-                // ensure UI returns to ready state
                 startButton.classList.remove('listening');
                 startButton.classList.remove('hidden');
                 statusDiv.classList.remove('hidden');
@@ -292,15 +249,14 @@
             startButton.title = "Speech recognition not supported";
         }
 
-        // Robust AI response matcher (case-insensitive)
+        // Robust AI response matcher
         function getAIResponse(messageRaw) {
             const message = (messageRaw || '').toLowerCase();
-
             let response = { text: "Sorry, I couldn't understand. Can you please repeat?", emotion: "neutral" };
 
             if (message.includes('hello') || message.includes('hi')) {
                 response = { text: "👋 Hello! How can I help you?", emotion: "thoughtful" };
-            } else if (message.includes('who are you') || message.includes('tum kaun ho') || message.includes('who r you')) {
+            } else if (message.includes('who are you') || message.includes('tum kaun ho')) {
                 response = { text: "My name is Isabella. I was created by Tejaswi Sen — he is my master and guide.", emotion: "happy" };
             } else if (message.includes('what is ai') || message.includes('what is artificial intelligence') || message.includes('ai kya')) {
                 response = { text: "AI, or Artificial Intelligence, is the branch of computer science that focuses on creating machines or software that can think, learn, and make decisions like humans.", emotion: "happy" };
@@ -311,52 +267,28 @@
             } else if (message.includes('i am sad') || message.includes('mai udas hu') || message.includes('i am feeling sad')) {
                 response = { text: "I'm sorry you're feeling that way. I'm here for you. Would you like to talk about it?", emotion: "sad" };
             }
-
             return response;
         }
 
         // Speak the text using Web Speech API
         function speak(text, emotion = 'neutral') {
-            if (!speechReady) {
-                // try to populate voices once more
-                populateVoiceList();
-            }
+            if (!speechReady) populateVoiceList();
             if (!speechReady || !synth) return;
-
             if (synth.speaking) synth.cancel();
-
             const utterance = new SpeechSynthesisUtterance(text);
-            // Prefer Hindi voice, then English
+
             let selectedVoice = voices.find(v => v.lang && v.lang.toLowerCase().startsWith('hi')) ||
-                                voices.find(v => v.lang && v.lang.toLowerCase().startsWith('en')) ||
-                                voices[0];
+                voices.find(v => v.lang && v.lang.toLowerCase().startsWith('en')) || voices[0];
 
             if (selectedVoice) utterance.voice = selectedVoice;
 
             switch (emotion) {
-                case 'happy':
-                    utterance.pitch = 1.2;
-                    utterance.rate = 1.05;
-                    break;
-                case 'sad':
-                    utterance.pitch = 0.85;
-                    utterance.rate = 0.95;
-                    break;
-                case 'thoughtful':
-                    utterance.pitch = 1.0;
-                    utterance.rate = 0.95;
-                    break;
-                default:
-                    utterance.pitch = 1.0;
-                    utterance.rate = 1.0;
-                    break;
+                case 'happy': utterance.pitch = 1.2; utterance.rate = 1.05; break;
+                case 'sad': utterance.pitch = 0.85; utterance.rate = 0.95; break;
+                case 'thoughtful': utterance.pitch = 1.0; utterance.rate = 0.95; break;
+                default: utterance.pitch = 1.0; utterance.rate = 1.0; break;
             }
-
-            try {
-                synth.speak(utterance);
-            } catch (e) {
-                console.warn('SpeechSynthesis speak error:', e);
-            }
+            try { synth.speak(utterance); } catch (e) { console.warn('SpeechSynthesis speak error:', e); }
         }
 
         function displayMessage(message, sender) {
@@ -364,8 +296,6 @@
             wrapper.className = sender === 'user' ? 'user-message-container' : 'ai-message-container';
             const bubble = document.createElement('div');
             bubble.classList.add('message', sender === 'user' ? 'user-message' : 'ai-message');
-
-            // preserve line breaks if any
             bubble.textContent = message;
             wrapper.appendChild(bubble);
             chatbox.appendChild(wrapper);
