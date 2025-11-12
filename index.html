@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Isabella - AI with Motion UI</title>
+    <title>Isabella - AI with Deep Voice</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
         :root {
@@ -89,7 +89,7 @@
     </style>
 </head>
 <body>
-    <canvas id="particles-canvas" aria-hidden="true"></canvas>
+    nvas id="particles-canvas" ariaria-hidden="true"></canvas>
     <div class="container" role="region" aria-label="Isabella AI assistant">
         <div id="clock" aria-live="polite"></div>
         <h1>Isabella AI</h1>
@@ -102,7 +102,7 @@
         <div id="status">Status: Ready</div>
     </div>
     <script>
-        // Animated particles background
+        // Animated Background
         const canvas = document.getElementById('particles-canvas');
         const ctx = canvas.getContext('2d');
         function resizeCanvas() {
@@ -152,7 +152,7 @@
         animateParticles();
         window.addEventListener('resize', () => { resizeCanvas(); initParticles(); });
 
-        // AI assistant logic
+        // AI Assistant Core
         const clockDiv = document.getElementById('clock');
         const startButton = document.getElementById('startButton');
         const statusDiv = document.getElementById('status');
@@ -160,12 +160,12 @@
         const thinkingIndicator = document.getElementById('thinking-indicator');
         function updateClock() {
             const now = new Date();
-            clockDiv.textContent = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+            clockDiv.textContent = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
         }
         updateClock();
         setInterval(updateClock, 1000);
 
-        // Speech synthesis & recognition setup
+        // Speech Synthesis & Recognition Setup
         const synth = window.speechSynthesis;
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition || null;
         let recognition = null;
@@ -182,7 +182,7 @@
         if (SpeechRecognition) {
             recognition = new SpeechRecognition();
             recognition.continuous = false;
-            recognition.lang = 'en-IN'; // Best for English + Hindi mix ("Hinglish")
+            recognition.lang = 'en-IN'; // for Hindi + English mix
             recognition.interimResults = false;
             recognition.maxAlternatives = 1;
 
@@ -249,7 +249,7 @@
             startButton.title = "Speech recognition not supported";
         }
 
-        // Robust AI response matcher
+        // AI Response Logic
         function getAIResponse(messageRaw) {
             const message = (messageRaw || '').toLowerCase();
             let response = { text: "Sorry, I couldn't understand. Can you please repeat?", emotion: "neutral" };
@@ -270,27 +270,51 @@
             return response;
         }
 
-        // Speak the text using Web Speech API
+        // Speak with deep voice and impact
         function speak(text, emotion = 'neutral') {
             if (!speechReady) populateVoiceList();
             if (!speechReady || !synth) return;
             if (synth.speaking) synth.cancel();
+
             const utterance = new SpeechSynthesisUtterance(text);
 
-            let selectedVoice = voices.find(v => v.lang && v.lang.toLowerCase().startsWith('hi')) ||
-                voices.find(v => v.lang && v.lang.toLowerCase().startsWith('en')) || voices[0];
+            // Pick a deeper male voice if available
+            const preferredVoiceName = "Google UK English Male"; // change as needed
+            let selectedVoice = voices.find(v => v.name === preferredVoiceName) ||
+                                voices.find(v => v.lang && v.lang.toLowerCase().startsWith('hi')) ||
+                                voices.find(v => v.lang && v.lang.toLowerCase().startsWith('en')) ||
+                                voices[0];
 
             if (selectedVoice) utterance.voice = selectedVoice;
 
+            // Lower pitch for deep tone; adjust rate for naturalness
             switch (emotion) {
-                case 'happy': utterance.pitch = 1.2; utterance.rate = 1.05; break;
-                case 'sad': utterance.pitch = 0.85; utterance.rate = 0.95; break;
-                case 'thoughtful': utterance.pitch = 1.0; utterance.rate = 0.95; break;
-                default: utterance.pitch = 1.0; utterance.rate = 1.0; break;
+                case 'happy':
+                    utterance.pitch = 0.7;
+                    utterance.rate = 1.1;
+                    break;
+                case 'sad':
+                    utterance.pitch = 0.5;
+                    utterance.rate = 0.9;
+                    break;
+                case 'thoughtful':
+                    utterance.pitch = 0.6;
+                    utterance.rate = 0.9;
+                    break;
+                default:
+                    utterance.pitch = 0.6;
+                    utterance.rate = 1.0;
+                    break;
             }
-            try { synth.speak(utterance); } catch (e) { console.warn('SpeechSynthesis speak error:', e); }
+
+            try {
+                synth.speak(utterance);
+            } catch (e) {
+                console.warn('SpeechSynthesis speak error:', e);
+            }
         }
 
+        // Display message in chatbox
         function displayMessage(message, sender) {
             const wrapper = document.createElement('div');
             wrapper.className = sender === 'user' ? 'user-message-container' : 'ai-message-container';
