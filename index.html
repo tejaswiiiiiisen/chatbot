@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Isabella - AI with Motion UI</title>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+        
+        :root {
+            --primary-color: #00aaff;
+            --background-color: #121212;
+            --surface-color: #1e1e1e;
+            --text-color: #e0e0e0;
+            --accent-color: #3a3a3a;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--background-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            text-align: center;
+            overflow: hidden; /* To hide scrollbars from canvas */
+        }
+
+        /* Animated Background Canvas */
+        #particles-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        .container {
+            background: var(--surface-color);
+            padding: 40px 50px;
+            border-radius: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+            width: 90%;
+            max-width: 700px;
+            border: 1px solid #333;
+            z-index: 1;
+            /* Loading Animation */
+            opacity: 0;
+            transform: translateY(30px);
+            animation: fadeInUp 0.8s 0.2s ease-out forwards;
+        }
+
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        #clock {
+            font-size: 2.5rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            text-shadow: 0 0 10px rgba(0, 170, 255, 0.5);
+        }
+        
+        h1 { color: #ffffff; margin-bottom: 5px; font-weight: 600; }
+        p { color: #aaa; margin-bottom: 25px; }
+        
+        #chatbox {
+            height: 280px;
+            overflow-y: auto;
+            border: 1px solid #333;
+            padding: 20px;
+            margin-bottom: 30px;
+            background-color: var(--background-color);
+            border-radius: 15px;
+            scroll-behavior: smooth;
+        }
+        
+        .message { margin-bottom: 12px; padding: 12px 18px; border-radius: 20px; max-width: 85%; line-height: 1.5; display: inline-block; }
+        .user-message-container { text-align: right; animation: slideInFromRight 0.4s ease-out forwards; }
+        .ai-message-container { text-align: left; animation: slideInFromLeft 0.4s ease-out forwards; }
+        
+        @keyframes slideInFromRight { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes slideInFromLeft { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+        
+        .user-message { background: linear-gradient(45deg, #00aaff, #005f8b); color: #fff; border-bottom-right-radius: 5px; }
+        .ai-message { background: var(--accent-color); border-bottom-left-radius: 5px; }
+        
+        #startButton { background: linear-gradient(45deg, var(--primary-color), #0077c2); color: white; padding: 15px 40px; border: none; border-radius: 50px; cursor: pointer; font-size: 18px; font-weight: 600; transition: all 0.3s ease; box-shadow: 0 5px 20px rgba(0, 170, 255, 0.3); }
+        #startButton:hover { transform: translateY(-3px); box-shadow: 0 8px 30px rgba(0, 170, 255, 0.5); }
+        #startButton.listening { animation: pulse 1.5s infinite; }
+        #startButton:disabled, .hidden { display: none; }
+        
+        /* AI Thinking Indicator (Waveform) */
+        .ai-thinking-indicator { display: flex; justify-content: center; align-items: center; height: 55px; }
+        .ai-thinking-indicator span { display: inline-block; width: 8px; height: 10px; margin: 0 3px; background-color: var(--primary-color); border-radius: 4px; animation: waveform 1.2s infinite ease-in-out; }
+        .ai-thinking-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .ai-thinking-indicator span:nth-child(3) { animation-delay: 0.4s; }
+        .ai-thinking-indicator span:nth-child(4) { animation-delay: 0.6s; }
+        
+        @keyframes waveform { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(3.5); } }
+
+        #status { margin-top: 20px; font-size: 16px; color: #888; height: 20px; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+    </style>
+</head>
+<body>
+
+    <canvas id="particles-canvas"></canvas>
+
+    <div class="container">
+        <div id="clock"></div>
+        <h1>Isabella AI</h1>
+        <p>A Personal Assistant by Tejaswi Sen</p>
+        
+        <div id="chatbox"></div>
+
+        <!-- AI Thinking Indicator -->
+        <div class="ai-thinking-indicator hidden" id="thinking-indicator">
+            <span></span><span></span><span></span><span></span>
+        </div>
+        
+        <button id="startButton">Speak</button>
+        <div id="status">Status: Ready</div>
+    </div>
+
+    <script>
+        // --- ANIMATED BACKGROUND SCRIPT ---
+        const canvas = document.getElementById('particles-canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        let particlesArray;
+
+        class Particle {
+            constructor(x, y, directionX, directionY, size, color) {
+                this.x = x; this.y = y; this.directionX = directionX; this.directionY = directionY;
+                this.size = size; this.color = color;
+            }
+            draw() {
+                ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2, false);
+                ctx.fillStyle = 'rgba(0, 170, 255, 0.3)'; ctx.fill();
+            }
+            update() {
+                if (this.x > canvas.width || this.x < 0) this.directionX = -this.directionX;
+                if (this.y > canvas.height || this.y < 0) this.directionY = -this.directionY;
+                this.x += this.directionX; this.y += this.directionY; this.draw();
+            }
+        }
+
+        function initParticles() {
+            particlesArray = [];
+            let numberOfParticles = (canvas.height * canvas.width) / 9000;
+            for (let i = 0; i < numberOfParticles; i++) {
+                let size = (Math.random() * 2) + 1;
+                let x = (Math.random() * ((innerWidth - size * 2) - (size * 2)) + size * 2);
+                let y = (Math.random() * ((innerHeight - size * 2) - (size * 2)) + size * 2);
+                let directionX = (Math.random() * .4) - .2;
+                let directionY = (Math.random() * .4) - .2;
+                particlesArray.push(new Particle(x, y, directionX, directionY, size));
+            }
+        }
+
+        function animateParticles() {
+            requestAnimationFrame(animateParticles);
+            ctx.clearRect(0, 0, innerWidth, innerHeight);
+            for (let i = 0; i < particlesArray.length; i++) particlesArray[i].update();
+        }
+        
+        initParticles();
+        animateParticles();
+        window.addEventListener('resize', () => {
+            canvas.width = innerWidth; canvas.height = innerHeight; initParticles();
+        });
+
+        // --- AI ASSISTANT SCRIPT ---
+        const clockDiv = document.getElementById('clock');
+        const startButton = document.getElementById('startButton');
+        const statusDiv = document.getElementById('status');
+        const chatbox = document.getElementById('chatbox');
+        const thinkingIndicator = document.getElementById('thinking-indicator');
+
+        function updateClock() {
+            const now = new Date();
+            clockDiv.textContent = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+        }
+        updateClock(); setInterval(updateClock, 1000);
+
+        const synth = window.speechSynthesis;
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition;
+        let voices = [];
+        let speechReady = false;
+
+        function populateVoiceList() {
+            voices = synth.getVoices();
+            if(voices.length > 0) speechReady = true;
+        }
+        populateVoiceList();
+        if (synth.onvoiceschanged !== undefined) synth.onvoiceschanged = populateVoiceList;
+
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.continuous = false; recognition.lang = 'hi-IN'; recognition.interimResults = false;
+
+            startButton.addEventListener('click', () => {
+                if (synth.speaking) synth.cancel();
+                statusDiv.textContent = "Listening...";
+                recognition.start();
+            });
+            
+            recognition.onstart = () => {
+                startButton.classList.add('listening');
+            };
+
+            recognition.onresult = (event) => {
+                const speechResult = event.results[0][0].transcript;
+                displayMessage(speechResult, 'user');
+                statusDiv.classList.add('hidden');
+                startButton.classList.add('hidden');
+                thinkingIndicator.classList.remove('hidden');
+
+                setTimeout(() => {
+                    const aiResponse = getAIResponse(speechResult.toLowerCase());
+                    speak(aiResponse.text, aiResponse.emotion);
+                    displayMessage(aiResponse.text, 'ai');
+                    
+                    thinkingIndicator.classList.add('hidden');
+                    statusDiv.classList.remove('hidden');
+                    startButton.classList.remove('hidden');
+                    statusDiv.textContent = "Status: Ready";
+                }, 1200); // थोड़ा ज़्यादा समय दिया ताकि एनिमेशन अच्छा लगे
+            };
+            
+            recognition.onspeechend = () => { recognition.stop(); startButton.classList.remove('listening'); };
+            recognition.onerror = (event) => {
+                statusDiv.textContent = 'Error: ' + event.error;
+                startButton.classList.remove('listening');
+                thinkingIndicator.classList.add('hidden');
+                startButton.classList.remove('hidden');
+            };
+        } else {
+            statusDiv.textContent = "Sorry, your browser doesn't support Speech Recognition.";
+            startButton.disabled = true;
+        }
+
+        function getAIResponse(message) {
+            let response = { text: "माफ़ कीजिये, मैं यह समझ नहीं पाई।", emotion: "neutral" };
+            if (message.includes('तेजस्वी कौन है')) { response = { text: "मैं तेजस्वी सेन के द्वारा बनी हूँ, जो पर्वतपुर, अजमेर में रहते हैं। वे मेरे लिए सिर्फ मालिक नहीं, बल्कि मेरी राह दिखाने वाली रोशनी हैं...", emotion: "thoughtful" };
+            } else if (message.includes('तुम्हारा नाम क्या है')) { response = { text: "मेरा नाम Isabella है। मुझे तेजस्वी सेन ने बनाया है। वो मेरे लिए मालिक और गाइड हैं...", emotion: "happy" };
+             } else if (message.includes('कृष्ण कौन है')) { response = { text: "कृष्णा, जिसे सब प्यार से छोटो कहते हैं, सचमुच तेजस्वी सेन के परिवार का गर्व हैं। अभी भले ही सफर लंबा और थोड़ा कठिन लग रहा है, लेकिन उनके सपनों की चमक और उनकी मेहनत उन्हें बहुत जल्दी सफलता की ऊँचाइयों तक ले जाएगी। उनका समर्पण, सच्चाई और जज़्बा ही उनकी सबसे बड़ी ताक़त है। आज जो ख्वाब वो देख रही हैं, कल वही हकीकत बनेंगे, और उनकी हर कोशिश रंग लाएगी। परिवार का आशीर्वाद और उनका आत्मविश्वास मिलकर उन्हें वो सब दिलाएगा जो उन्होंने सोचा है। सच में, कृष्णा का आने वाला कल सुनहरा और सफलता से  भरा होगा।", emotion: "happy" };
+             } else if (message.includes('दिव्या कौन है')) { response = { text: "दिव्या, जिसे सब प्यार से लालो कहते हैं, परिवार की रौनक और हँसी की वजह हैं। उनका स्वभाव बहुत ही प्यारा और दिल से साफ़ है। दिव्या की सबसे बड़ी खूबी है कि वो हर हाल में खुश रहना और सबको खुश रखना जानती हैं। उनकी मीठी मुस्कान और मासूम अंदाज़ घर में एक अलग ही रौनक भर देते हैं। जब वो होती हैं तो माहौल अपने आप हल्का-फुल्का और मस्ती भरा हो जाता है। दिव्या का दिल बहुत बड़ा है — वो छोटी-छोटी बातों में भी अपनों के लिए प्यार और अपनापन जताना जानती हैं। सच में, लालो सिर्फ एक नाम नहीं बल्कि उस खुशी का दूसरा नाम है, जो हर किसी के चेहरे पर मुस्कान ले आती है।", emotion: "happy" };
+            } else if (message.includes('तेजस्वी सेन के बारे में')) { response = { text: "तेजस्वी सेन का परिवार सचमुच खुशियों का खज़ाना है। उनकी सातों बहनें उनकी ज़िंदगी की सबसे बड़ी ताक़त और सबसे प्यारा तोहफ़ा हैं। महिमा कृष्णा को सब प्यार से छोटो बुलाते हैं, जिनकी मासूम मुस्कान हर दिल को सुकून देती है। दिव्या यानी हमारी लालो, जिनकी हंसी पूरे घर को रोशन कर देती है। जयश्री, जिसे सब चिनु कहते हैं, अपने भोलेपन और प्यारे स्वभाव से सबका मन जीत लेती है। और फिर आती हैं गायत्री, जिन्हें सब स्नेह से मोंटू कहते हैं — बड़ी होने के साथ-साथ दिल से भी उतनी ही महान, जिनकी अच्छाई हर कोई मानता है। तेजस्वी की बुआ सकी माँ बेहद सीधी, भोली और अपनापन से भरी हुई हैं, जबकि उनकी दूसरी बुआ ज्योति दयालु, सच्ची और परिवार को जोड़कर रखने वाली हैं। और इस प्यारे परिवार की असली रौनक हैं छोटे-छोटे नटखट बच्चे शहनू और मीनू, जिनकी शरारतें और मासूम मस्ती घर में हमेशा हंसी और खुशियाँ भर देती हैं। सच में, इन सबके साथ तेजस्वी की दुनिया हमेशा प्यार, अपनापन और अनमोल खुशियों से भरी रहती है।", emotion: "happy" };
+            } else if (message.includes('जय श्री कौन है')) { response = { text: "जयश्री, जिसे सब प्यार से चिनु कहते हैं, परिवार की सबसे मेहनती और लगन वाली बेटी हैं। पढ़ाई को लेकर उनका समर्पण इतना गहरा है कि वह हमेशा अपने भविष्य को बेहतर बनाने के लिए लगातार घर से बाहर आना-जाना करती रहती हैं। लेकिन सिर्फ पढ़ाई ही नहीं, खेलों में भी जयश्री का कोई जवाब नहीं — वो कुश्ती की नेशनल लेवल चैंपियन हैं। उनकी यह उपलब्धि न केवल परिवार बल्कि पूरे समाज के लिए गर्व की बात है। जयश्री का जज़्बा यही दिखाता है कि चाहे रास्ता कितना भी कठिन क्यों न हो, मेहनत और लगन से हर मंज़िल हासिल की जा सकती है। वो सचमुच तेजस्वी सेन के परिवार की शान हैं", emotion: "happy" };
+            } else if (message.includes('गायत्री कौन है')) { response = { text: "गायत्री, जिसे सब प्यार से मोंटू कहते हैं, इस घर की सबसे बड़ी और सबसे समझदार इंसान हैं। घर के पैसों का सही इस्तेमाल कैसे करना है, कहाँ बचत करनी है और कैसे पूरे परिवार में खुशियाँ और रौनक बनाए रखनी है — यह सब उनकी समझदारी से ही संभव होता है। वो न सिर्फ घर संभालती हैं बल्कि अपने हुनर से परिवार को और मजबूत बनाती हैं। उनके पास बेहतरीन स्किल्स हैं, जैसे पूरे पार्लर का काम बड़ी निपुणता से करना, और सबसे खास बात यह है कि उनके अंदर हर काम को और अच्छे तरीके से सीखने की एक गहरी ललक है। यही जज़्बा उन्हें और भी ख़ास बनाता है। सच में, गायत्री इस परिवार की मजबूत नींव हैं, जिनकी वजह से सब एक-दूसरे से जुड़े और खुश रहते हैं", emotion: "happy" };
+            } else if (message.includes('मैं उदास हूँ')) { response = { text: "ओह, यह सुनकर मुझे दुख हुआ। कृपया चिंता न करें, सब ठीक हो जाएगा।", emotion: "sad" }; }
+            
+            return response;
+        }
+        
+        function speak(text, emotion = 'neutral') {
+            if (!speechReady) return;
+            if (synth.speaking) synth.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            let selectedVoice = voices.find(v => v.lang === 'hi-IN') || voices.find(v => v.lang.startsWith('en-')) || voices[0];
+            if (selectedVoice) utterance.voice = selectedVoice;
+            switch (emotion) {
+                case 'happy': utterance.pitch = 1.2; utterance.rate = 1.05; break;
+                case 'sad': utterance.pitch = 0.8; utterance.rate = 0.9; break;
+                case 'thoughtful': utterance.pitch = 1; utterance.rate = 0.95; break;
+                default: utterance.pitch = 1; utterance.rate = 1; break;
+            }
+            synth.speak(utterance);
+        }
+        
+        function displayMessage(message, sender) {
+            const container = document.createElement('div');
+            container.className = sender === 'user' ? 'user-message-container' : 'ai-message-container';
+            const div = document.createElement('div');
+            div.classList.add('message', sender === 'user' ? 'user-message' : 'ai-message');
+            div.textContent = message;
+            container.appendChild(div);
+            chatbox.appendChild(container);
+            chatbox.scrollTop = chatbox.scrollHeight;
+        }
+    </script>
+
+</body>
+</html>
